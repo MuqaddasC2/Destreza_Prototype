@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-dark: #0C0E1D;
+  --bg-medium: #211F36;
+  --accent-primary: #51FAAA;
+  --accent-secondary: #FF81FF;
+  --accent-tertiary: #616083;
+}
+
+html, body {
+  padding: 0;
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  overflow-x: hidden;
+  color: rgba(255, 255, 255, 0.87);
+  background: linear-gradient(to bottom, var(--bg-dark), var(--bg-medium));
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(12, 14, 29, 0.5);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--accent-tertiary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-primary);
+}
+
+/* Neon text effect for highlights */
+.neon-text {
+  color: var(--accent-primary);
+  text-shadow: 0 0 5px rgba(81, 250, 170, 0.5);
+}
+
+.neon-text-secondary {
+  color: var(--accent-secondary);
+  text-shadow: 0 0 5px rgba(255, 129, 255, 0.5);
+}
+
+/* Gradient text effect */
+.gradient-text {
+  background: linear-gradient(to right, var(--accent-secondary), var(--accent-primary));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
