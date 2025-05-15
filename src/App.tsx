@@ -4,7 +4,7 @@ import { AnimatePresence } from 'framer-motion';
 import theme from './theme/theme';
 import Navigation from './components/Navigation';
 import HomePage from './pages/HomePage';
-import NetworkGraphPage from './pages/ForceDirectedGraphPage';
+import NetworkGraphPage from './pages/NetworkGraphPage';
 import StatisticsPage from './pages/StatisticsPage';
 import SimulationComplete from './components/SimulationComplete';
 import { SimulationProvider } from './context/SimulationContext';
