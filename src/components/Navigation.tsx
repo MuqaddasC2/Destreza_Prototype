@@ -5,11 +5,8 @@ import { motion } from 'framer-motion';
 import { colors } from '../theme/theme';
 
 const StyledTabs = styled(Tabs)(({ theme }) => ({
-  '& .MuiTabs-indicator': {
-    height: 3,
-    borderRadius: '2px',
-    background: colors.accent.primary,
-    boxShadow: `0 0 10px ${colors.accent.primary}`,
+  '& .MuiTabs-flexContainer': {
+    gap: '16px',
   },
 }));
 
@@ -17,26 +14,34 @@ const StyledTab = styled(Tab)(({ theme }) => ({
   textTransform: 'none',
   fontSize: '1rem',
   fontWeight: 500,
-  minWidth: 100,
+  minWidth: 160,
   color: colors.text.primary,
   transition: 'all 0.3s ease',
   position: 'relative',
+  borderRadius: '50px',
+  padding: '12px 24px',
+  backgroundColor: 'rgba(81, 250, 170, 0.05)',
+  backdropFilter: 'blur(8px)',
+  border: '1px solid rgba(81, 250, 170, 0.2)',
   
   '&.Mui-selected': {
     color: colors.accent.primary,
+    backgroundColor: 'rgba(81, 250, 170, 0.1)',
+    boxShadow: '0 0 15px rgba(81, 250, 170, 0.3)',
+    border: '1px solid rgba(81, 250, 170, 0.4)',
   },
 
   '&:hover': {
-    color: colors.accent.primary,
-    opacity: 0.9,
+    backgroundColor: 'rgba(81, 250, 170, 0.15)',
+    boxShadow: '0 0 20px rgba(81, 250, 170, 0.4)',
   },
 }));
 
-const GlowingIcon = styled(motion.div)(({ theme }) => ({
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  marginRight: 8,
+const BackgroundCircle = styled(Box)(({ theme }) => ({
+  position: 'absolute',
+  borderRadius: '50%',
+  background: 'radial-gradient(circle, rgba(81, 250, 170, 0.05) 0%, rgba(81, 250, 170, 0) 70%)',
+  backdropFilter: 'blur(8px)',
 }));
 
 interface NavigationProps {
@@ -58,59 +63,66 @@ const Navigation: React.FC<NavigationProps> = ({
         position: 'relative',
         backdropFilter: 'blur(8px)',
         borderBottom: `1px solid ${colors.card.border}`,
+        overflow: 'hidden',
       }}
       component={motion.div}
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.2 }}
     >
+      {/* Background Circles */}
+      <BackgroundCircle
+        sx={{
+          width: '400px',
+          height: '400px',
+          top: '-200px',
+          left: '10%',
+        }}
+      />
+      <BackgroundCircle
+        sx={{
+          width: '300px',
+          height: '300px',
+          bottom: '-150px',
+          right: '20%',
+        }}
+      />
+      <BackgroundCircle
+        sx={{
+          width: '200px',
+          height: '200px',
+          top: '-100px',
+          right: '10%',
+        }}
+      />
+      
       <StyledTabs
         value={currentTab}
         onChange={onTabChange}
         centered
         aria-label="navigation tabs"
+        TabIndicatorProps={{ sx: { display: 'none' } }}
       >
         <StyledTab
           icon={
-            <GlowingIcon
-              animate={{ 
-                filter: currentTab === 0 ? 'drop-shadow(0 0 4px #51FAAA)' : 'none',
-                scale: currentTab === 0 ? 1.1 : 1
-              }}
-            >
-              <Home size={20} />
-            </GlowingIcon>
+            <Home size={20} />
           }
           label="Home"
           iconPosition="start"
         />
         <StyledTab
           icon={
-            <GlowingIcon
-              animate={{ 
-                filter: currentTab === 1 ? 'drop-shadow(0 0 4px #51FAAA)' : 'none',
-                scale: currentTab === 1 ? 1.1 : 1
-              }}
-            >
-              <ActivitySquare size={20} />
-            </GlowingIcon>
+            <ActivitySquare size={20} />
           }
-          label="Force-Directed Graph"
+          label="Network Graph"
           iconPosition="start"
           disabled={!simulationStarted}
         />
         <StyledTab
           icon={
-            <GlowingIcon
-              animate={{ 
-                filter: currentTab === 2 ? 'drop-shadow(0 0 4px #51FAAA)' : 'none',
-                scale: currentTab === 2 ? 1.1 : 1
-              }}
-            >
-              <BarChart3 size={20} />
-            </GlowingIcon>
+            <BarChart3 size={20} />
           }
-          label="Charts"
+          label="Statistics"
           iconPosition="start"
           disabled={!simulationStarted}
         />

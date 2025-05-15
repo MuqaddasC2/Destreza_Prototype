@@ -4,17 +4,22 @@ import { AnimatePresence } from 'framer-motion';
 import theme from './theme/theme';
 import Navigation from './components/Navigation';
 import HomePage from './pages/HomePage';
-import ForceDirectedGraphPage from './pages/ForceDirectedGraphPage';
-import ChartsPage from './pages/ChartsPage';
+import NetworkGraphPage from './pages/ForceDirectedGraphPage';
+import StatisticsPage from './pages/StatisticsPage';
+import SimulationComplete from './components/SimulationComplete';
 import { SimulationProvider } from './context/SimulationContext';
 
 function App() {
   const [currentTab, setCurrentTab] = useState(0);
   const [simulationStarted, setSimulationStarted] = useState(false);
   const [simulationCompleted, setSimulationCompleted] = useState(false);
+  const [showCompletionPrompt, setShowCompletionPrompt] = useState(false);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setCurrentTab(newValue);
+    if (showCompletionPrompt) {
+      setShowCompletionPrompt(false);
+    }
   };
 
   const startSimulation = () => {
@@ -23,13 +28,25 @@ function App() {
     // Simulate a delay before completing the simulation
     setTimeout(() => {
       setSimulationCompleted(true);
+      setShowCompletionPrompt(true);
     }, 5000); // 5 second simulation for demonstration
   };
 
   const resetSimulation = () => {
     setSimulationStarted(false);
     setSimulationCompleted(false);
+    setShowCompletionPrompt(false);
     setCurrentTab(0);
+  };
+
+  const handleViewNetwork = () => {
+    setCurrentTab(1);
+    setShowCompletionPrompt(false);
+  };
+
+  const handleViewStats = () => {
+    setCurrentTab(2);
+    setShowCompletionPrompt(false);
   };
 
   // Handle tab switching logic
@@ -66,12 +83,19 @@ function App() {
                 />
               )}
               
+              {showCompletionPrompt && simulationCompleted && currentTab === 0 && (
+                <SimulationComplete
+                  onViewNetwork={handleViewNetwork}
+                  onViewStats={handleViewStats}
+                />
+              )}
+              
               {currentTab === 1 && simulationCompleted && (
-                <ForceDirectedGraphPage key="graph" />
+                <NetworkGraphPage key="network" />
               )}
               
               {currentTab === 2 && simulationCompleted && (
-                <ChartsPage key="charts" />
+                <StatisticsPage key="statistics" />
               )}
             </AnimatePresence>
           </Box>
