@@ -15,12 +15,41 @@ interface HomePageProps {
   };
 }
 
+const BackgroundCircle = ({ size, top, left, right, bottom, delay = 0 }) => (
+  <Box
+    component={motion.div}
+    initial={{ opacity: 0, scale: 0.8 }}
+    animate={{ opacity: 1, scale: 1 }}
+    transition={{ duration: 1.5, delay }}
+    sx={{
+      position: 'absolute',
+      width: size,
+      height: size,
+      borderRadius: '50%',
+      background: 'radial-gradient(circle, rgba(81, 250, 170, 0.03) 0%, rgba(255, 129, 255, 0.02) 50%, rgba(0, 0, 0, 0) 70%)',
+      backdropFilter: 'blur(60px)',
+      top,
+      left,
+      right,
+      bottom,
+      zIndex: 0,
+    }}
+  />
+);
+
 const HomePage: React.FC<HomePageProps> = ({ 
   onStartSimulation, 
   simulationStatus 
 }) => {
   return (
-    <Container maxWidth="lg">
+    <Container maxWidth="lg" sx={{ position: 'relative', overflow: 'hidden' }}>
+      {/* Background Circles */}
+      <BackgroundCircle size="800px" top="-200px" left="-200px" delay={0.2} />
+      <BackgroundCircle size="600px" top="20%" right="-100px" delay={0.3} />
+      <BackgroundCircle size="500px" bottom="-100px" left="20%" delay={0.4} />
+      <BackgroundCircle size="400px" top="40%" left="30%" delay={0.5} />
+      <BackgroundCircle size="300px" bottom="20%" right="10%" delay={0.6} />
+
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -31,7 +60,9 @@ const HomePage: React.FC<HomePageProps> = ({
           sx={{ 
             textAlign: 'center', 
             py: { xs: 4, md: 8 },
-            mb: 4
+            mb: 4,
+            position: 'relative',
+            zIndex: 1
           }}
         >
           <Box 
