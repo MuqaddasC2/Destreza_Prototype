@@ -25,9 +25,11 @@ export const colors = {
     exposed: '#FF81FF',
     infectious: '#FF4D4F',
     recovered: '#51FAAA',
+    dead: '#666666',
   }
 };
 
+// Theme configuration
 const theme = createTheme({
   palette: {
     mode: 'dark',

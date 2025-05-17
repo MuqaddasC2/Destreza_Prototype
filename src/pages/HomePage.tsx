@@ -6,6 +6,7 @@ import FrostedCard from '../components/FrostedCard';
 import SimulationForm from '../components/SimulationForm';
 import SimulationStatus from '../components/SimulationStatus';
 import HeroBackground from '../components/HeroBackground';
+import ParticlesEmbers from '../components/ParticlesEmbers';
 import { colors } from '../theme/theme';
 
 interface HomePageProps {
@@ -16,28 +17,6 @@ interface HomePageProps {
   };
   onSimulationComplete: (action: 'graph' | 'stats') => void;
 }
-
-const BackgroundCircle = ({ size, top, left, right, bottom, delay = 0 }) => (
-  <Box
-    component={motion.div}
-    initial={{ opacity: 0, scale: 0.8 }}
-    animate={{ opacity: 1, scale: 1 }}
-    transition={{ duration: 1.5, delay }}
-    sx={{
-      position: 'absolute',
-      width: size,
-      height: size,
-      borderRadius: '50%',
-      background: 'radial-gradient(circle, rgba(81, 250, 170, 0.03) 0%, rgba(255, 129, 255, 0.02) 50%, rgba(0, 0, 0, 0) 70%)',
-      backdropFilter: 'blur(60px)',
-      top,
-      left,
-      right,
-      bottom,
-      zIndex: 0,
-    }}
-  />
-);
 
 const HomePage: React.FC<HomePageProps> = ({ 
   onStartSimulation, 
@@ -65,6 +44,7 @@ const HomePage: React.FC<HomePageProps> = ({
         }}
       >
         <HeroBackground />
+        <ParticlesEmbers direction="up" />
         
         <Container maxWidth="lg">
           <FrostedCard
@@ -76,29 +56,18 @@ const HomePage: React.FC<HomePageProps> = ({
               textAlign: 'center',
               position: 'relative',
               zIndex: 1,
-              background: 'rgba(12, 14, 29, 0.2)',
-              backdropFilter: 'blur(20px)',
-              p: 4,
-              maxWidth: '800px',
+              background: colors.card.background,
+              p: 3,
+              maxWidth: '500px',
               mx: 'auto',
             }}
           >
-            <ActivitySquare 
-              size={80} 
-              color={colors.accent.primary}
-              strokeWidth={1.5}
-              style={{ 
-                margin: '0 auto',
-                filter: 'drop-shadow(0 0 20px rgba(81, 250, 170, 0.5))'
-              }}
-            />
-            
             <Typography 
               variant="h1"
               sx={{ 
-                fontSize: { xs: '3rem', md: '4.5rem' },
+                fontSize: { xs: '2rem', md: '2.5rem' },
                 fontWeight: 700,
-                mt: 4,
+                mt: 2,
                 mb: 2,
                 background: 'linear-gradient(90deg, #FF81FF, #51FAAA)',
                 backgroundClip: 'text',
@@ -114,10 +83,10 @@ const HomePage: React.FC<HomePageProps> = ({
               variant="h4"
               sx={{
                 color: 'text.secondary',
-                maxWidth: '800px',
+                maxWidth: '500px',
                 mx: 'auto',
-                mb: 6,
-                fontSize: { xs: '1.2rem', md: '1.5rem' },
+                mb: 3,
+                fontSize: { xs: '0.9rem', md: '1rem' },
               }}
             >
               Advanced disease transmission simulator with real-time visualization and analysis
@@ -129,29 +98,66 @@ const HomePage: React.FC<HomePageProps> = ({
               onClick={scrollToSimulation}
               component={motion.button}
               whileHover={{ 
-                scale: 1.05,
-                boxShadow: '0 0 20px rgba(81, 250, 170, 0.5)'
+                scale: 1.05, 
+                boxShadow: '0 0 20px rgba(81, 250, 170, 0.5)' 
               }}
               whileTap={{ scale: 0.95 }}
               sx={{
                 px: 4,
-                py: 2,
+                py: 1.5,
                 borderRadius: '12px',
                 backgroundImage: 'linear-gradient(45deg, #51FAAA, rgba(81, 250, 170, 0.8))',
                 color: '#0C0E1D',
                 fontWeight: 'bold',
-                fontSize: '1.1rem',
+                fontSize: '1rem'
               }}
             >
               Configure Simulation
             </Button>
           </FrostedCard>
         </Container>
+
+        {/* Glowing Bar */}
+        <Box
+          component={motion.div}
+          initial={{ opacity: 0 }}
+          animate={{ 
+            opacity: [0.5, 1, 0.5],
+            boxShadow: [
+              '0 0 20px rgba(81, 250, 170, 0.3)',
+              '0 0 40px rgba(81, 250, 170, 0.6)',
+              '0 0 20px rgba(81, 250, 170, 0.3)'
+            ]
+          }}
+          transition={{ 
+            duration: 2,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+          sx={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: '4px',
+            background: 'linear-gradient(90deg, transparent, #51FAAA, transparent)',
+            zIndex: 2
+          }}
+        />
       </Box>
 
       {/* Content Section */}
       <Container maxWidth="lg" id="simulation-section">
         <Box sx={{ py: 8 }}>
+          {!simulationStatus.started && (
+            <SimulationForm onStart={onStartSimulation} />
+          )}
+          
+          <SimulationStatus 
+            isRunning={simulationStatus.started && !simulationStatus.completed} 
+            onComplete={onSimulationComplete}
+          />
+
           <FrostedCard 
             sx={{ 
               p: { xs: 3, md: 5 }, 
@@ -207,15 +213,6 @@ const HomePage: React.FC<HomePageProps> = ({
               </Grid>
             </Box>
           </FrostedCard>
-
-          {!simulationStatus.started && (
-            <SimulationForm onStart={onStartSimulation} />
-          )}
-          
-          <SimulationStatus 
-            isRunning={simulationStatus.started && !simulationStatus.completed} 
-            onComplete={onSimulationComplete}
-          />
         </Box>
       </Container>
     </Box>

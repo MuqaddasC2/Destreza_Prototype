@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Box, Typography, Container, Grid, Tabs, Tab, Button } from '@mui/material';
 import { motion } from 'framer-motion';
+import { RefreshCw } from 'lucide-react';
 import FrostedCard from '../components/FrostedCard';
 import TimeSeriesChart from '../components/TimeSeriesChart';
 import DailyIncidenceChart from '../components/DailyIncidenceChart';
@@ -15,6 +16,7 @@ interface TabPanelProps {
 
 interface StatisticsPageProps {
   hasSimulation: boolean;
+  onReset?: () => void;
 }
 
 const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => {
@@ -30,7 +32,7 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => {
   );
 };
 
-const StatisticsPage: React.FC<StatisticsPageProps> = ({ hasSimulation }) => {
+const StatisticsPage: React.FC<StatisticsPageProps> = ({ hasSimulation, onReset }) => {
   const [tabValue, setTabValue] = useState(0);
   
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -38,7 +40,17 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ hasSimulation }) => {
   };
 
   const scrollToSimulation = () => {
-    window.location.href = '/#simulation-section';
+    const homeTab = document.querySelector('[role="tab"][aria-label="Home"]');
+    if (homeTab) {
+      (homeTab as HTMLElement).click();
+    }
+    
+    setTimeout(() => {
+      const element = document.getElementById('simulation-section');
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
   };
   
   if (!hasSimulation) {
@@ -84,7 +96,7 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ hasSimulation }) => {
   }
   
   return (
-    <Container maxWidth="lg" sx={{ py: 12, mt: '48px' }}>
+    <Container maxWidth="lg" sx={{ py: 12, mt: '48px'  }}>
       <Box
         component={motion.div}
         initial={{ opacity: 0, y: 20 }}
@@ -110,13 +122,15 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ hasSimulation }) => {
         <Grid container spacing={4}>
           <Grid item xs={12}>
             <FrostedCard sx={{ p: 3 }}>
-              <Box sx={{ mb: 3 }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Tabs
                   value={tabValue}
                   onChange={handleTabChange}
                   variant="fullWidth"
                   aria-label="chart tabs"
                   sx={{
+                    flexGrow: 1,
+                    mr: 2,
                     '& .MuiTabs-indicator': {
                       backgroundColor: colors.accent.primary,
                       height: 3,
@@ -137,6 +151,21 @@ const StatisticsPage: React.FC<StatisticsPageProps> = ({ hasSimulation }) => {
                   <Tab label="Daily New Cases" />
                   <Tab label="Population Distribution" />
                 </Tabs>
+                <Button
+                  variant="outlined"
+                  onClick={onReset}
+                  startIcon={<RefreshCw size={20} />}
+                  sx={{
+                    borderColor: colors.accent.primary,
+                    color: colors.accent.primary,
+                    '&:hover': {
+                      borderColor: colors.accent.primary,
+                      backgroundColor: 'rgba(81, 250, 170, 0.1)',
+                    }
+                  }}
+                >
+                  Configure New Simulation
+                </Button>
               </Box>
               
               <TabPanel value={tabValue} index={0}>

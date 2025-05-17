@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, LinearProgress, Grid, Button } from '@mui/material';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ActivitySquare, BarChart3 } from 'lucide-react';
+import { ActivitySquare, BarChart3, RefreshCw } from 'lucide-react';
 import FrostedCard from './FrostedCard';
 import { colors } from '../theme/theme';
 
 interface SimulationStatusProps {
   isRunning: boolean;
   onComplete?: (action: 'graph' | 'stats') => void;
+  onReset?: () => void;
 }
 
 const simulationSteps = [
@@ -23,7 +24,7 @@ const simulationSteps = [
   "Simulation complete!"
 ];
 
-const SimulationStatus: React.FC<SimulationStatusProps> = ({ isRunning, onComplete }) => {
+const SimulationStatus: React.FC<SimulationStatusProps> = ({ isRunning, onComplete, onReset }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [progress, setProgress] = useState(0);
   const [showCompletionButtons, setShowCompletionButtons] = useState(false);
@@ -182,7 +183,7 @@ const SimulationStatus: React.FC<SimulationStatusProps> = ({ isRunning, onComple
               <Typography variant="h6" sx={{ textAlign: 'center', mb: 2 }}>
                 Your simulation is ready!
               </Typography>
-              <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'center' }}>
                 <Button
                   variant="contained"
                   onClick={() => onComplete?.('graph')}
@@ -216,6 +217,24 @@ const SimulationStatus: React.FC<SimulationStatusProps> = ({ isRunning, onComple
                   }}
                 >
                   Analyze Statistics
+                </Button>
+                <Button
+                  variant="outlined"
+                  onClick={onReset}
+                  startIcon={<RefreshCw size={20} />}
+                  sx={{
+                    px: 4,
+                    py: 1.5,
+                    borderRadius: '12px',
+                    borderColor: colors.accent.primary,
+                    color: colors.accent.primary,
+                    '&:hover': {
+                      borderColor: colors.accent.primary,
+                      backgroundColor: 'rgba(81, 250, 170, 0.1)',
+                    }
+                  }}
+                >
+                  Configure New Simulation
                 </Button>
               </Box>
             </Box>

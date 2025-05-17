@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Box, Typography, Container, Grid, Switch, FormControlLabel, Button } from '@mui/material';
 import { motion } from 'framer-motion';
+import { RefreshCw } from 'lucide-react';
 import FrostedCard from '../components/FrostedCard';
 import ForceGraph from '../components/ForceGraph';
 import StatisticsCards from '../components/StatisticsCards';
@@ -8,13 +9,24 @@ import { colors } from '../theme/theme';
 
 interface NetworkGraphPageProps {
   hasSimulation: boolean;
+  onReset?: () => void;
 }
 
-const NetworkGraphPage: React.FC<NetworkGraphPageProps> = ({ hasSimulation }) => {
+const NetworkGraphPage: React.FC<NetworkGraphPageProps> = ({ hasSimulation, onReset }) => {
   const [animateGraph, setAnimateGraph] = useState(true);
   
   const scrollToSimulation = () => {
-    window.location.href = '/#simulation-section';
+    const homeTab = document.querySelector('[aria-label="Home"]');
+    if (homeTab) {
+      (homeTab as HTMLElement).click();
+    }
+    
+    setTimeout(() => {
+      const element = document.getElementById('simulation-section');
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
   };
   
   if (!hasSimulation) {
@@ -90,16 +102,33 @@ const NetworkGraphPage: React.FC<NetworkGraphPageProps> = ({ hasSimulation }) =>
                 <Typography variant="h5">
                   Force-Directed Graph
                 </Typography>
-                <FormControlLabel 
-                  control={
-                    <Switch 
-                      checked={animateGraph}
-                      onChange={(e) => setAnimateGraph(e.target.checked)}
-                      color="primary"
-                    />
-                  } 
-                  label="Animate Growth" 
-                />
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                  <FormControlLabel 
+                    control={
+                      <Switch 
+                        checked={animateGraph}
+                        onChange={(e) => setAnimateGraph(e.target.checked)}
+                        color="primary"
+                      />
+                    } 
+                    label="Animate Growth" 
+                  />
+                  <Button
+                    variant="outlined"
+                    onClick={onReset}
+                    startIcon={<RefreshCw size={20} />}
+                    sx={{
+                      borderColor: colors.accent.primary,
+                      color: colors.accent.primary,
+                      '&:hover': {
+                        borderColor: colors.accent.primary,
+                        backgroundColor: 'rgba(81, 250, 170, 0.1)',
+                      }
+                    }}
+                  >
+                    Configure New Simulation
+                  </Button>
+                </Box>
               </Box>
               
               <Box sx={{ mb: 2 }}>
@@ -130,7 +159,7 @@ const NetworkGraphPage: React.FC<NetworkGraphPageProps> = ({ hasSimulation }) =>
                 </Grid>
               </Box>
               
-              <Box sx={{ height: 500 }}>
+              <Box sx={{ height: '600px', width: '100%' }}>
                 <ForceGraph animate={animateGraph} />
               </Box>
             </FrostedCard>

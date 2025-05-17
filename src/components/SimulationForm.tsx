@@ -88,7 +88,7 @@ const SimulationForm: React.FC<{ onStart: () => void }> = ({ onStart }) => {
                 variant="outlined"
                 size="small"
                 inputProps={{ min: 100, max: 5000, step: 100 }}
-                sx={{ width: 90, ml: 2 }}
+                sx={{ width: 150, ml: 2 }}
               />
             </Box>
           </Box>
@@ -127,7 +127,7 @@ const SimulationForm: React.FC<{ onStart: () => void }> = ({ onStart }) => {
                 variant="outlined"
                 size="small"
                 inputProps={{ min: 1, max: 50, step: 1 }}
-                sx={{ width: 90, ml: 2 }}
+                sx={{ width: 150, ml: 2 }}
               />
             </Box>
           </Box>
@@ -168,7 +168,7 @@ const SimulationForm: React.FC<{ onStart: () => void }> = ({ onStart }) => {
                 variant="outlined"
                 size="small"
                 inputProps={{ min: 0.5, max: 5, step: 0.1 }}
-                sx={{ width: 90, ml: 2 }}
+                sx={{ width: 150, ml: 2 }}
               />
             </Box>
           </Box>
@@ -200,7 +200,7 @@ const SimulationForm: React.FC<{ onStart: () => void }> = ({ onStart }) => {
                   },
                 }}
               />
-              <Typography sx={{ ml: 2, width: 90 }}>
+              <Typography sx={{ ml: 2, width: 150 }}>
                 {Math.round(simulationParams.recoveryRate * 100)}%
               </Typography>
             </Box>
@@ -256,7 +256,7 @@ const SimulationForm: React.FC<{ onStart: () => void }> = ({ onStart }) => {
                     variant="outlined"
                     size="small"
                     inputProps={{ min: 1, max: 14, step: 1 }}
-                    sx={{ width: 90, ml: 2 }}
+                    sx={{ width: 150, ml: 2 }}
                   />
                 </Box>
               </Box>
@@ -295,7 +295,7 @@ const SimulationForm: React.FC<{ onStart: () => void }> = ({ onStart }) => {
                     variant="outlined"
                     size="small"
                     inputProps={{ min: 1, max: 21, step: 1 }}
-                    sx={{ width: 90, ml: 2 }}
+                    sx={{ width: 150, ml: 2 }}
                   />
                 </Box>
               </Box>
@@ -329,7 +329,7 @@ const SimulationForm: React.FC<{ onStart: () => void }> = ({ onStart }) => {
                       },
                     }}
                   />
-                  <Typography sx={{ ml: 2, width: 90 }}>
+                  <Typography sx={{ ml: 2, width: 150 }}>
                     {Math.round((simulationParams.vaccinationRate || 0) * 100)}%
                   </Typography>
                 </Box>
@@ -362,7 +362,7 @@ const SimulationForm: React.FC<{ onStart: () => void }> = ({ onStart }) => {
                       },
                     }}
                   />
-                  <Typography sx={{ ml: 2, width: 90 }}>
+                  <Typography sx={{ ml: 2, width: 150 }}>
                     {Math.round((simulationParams.socialDistancing || 0) * 100)}%
                   </Typography>
                 </Box>

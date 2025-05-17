@@ -97,6 +97,7 @@ function App() {
                     completed: simulationCompleted
                   }}
                   onSimulationComplete={handleSimulationComplete}
+                  onReset={resetSimulation}
                 />
               )}
               
@@ -104,6 +105,7 @@ function App() {
                 <NetworkGraphPage 
                   key="network"
                   hasSimulation={simulationStarted}
+                  onReset={resetSimulation}
                 />
               )}
               
@@ -111,6 +113,7 @@ function App() {
                 <StatisticsPage 
                   key="stats"
                   hasSimulation={simulationStarted}
+                  onReset={resetSimulation}
                 />
               )}
             </AnimatePresence>
