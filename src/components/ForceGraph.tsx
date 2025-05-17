@@ -1,17 +1,20 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as d3 from 'd3';
 import { Box, useTheme } from '@mui/material';
-import { Agent, DiseaseState, useSimulation } from '../context/SimulationContext';
+import { Agent, useSimulation } from '../context/SimulationContext';
+import type { DiseaseState } from '../context/SimulationContext';
 import { colors } from '../theme/theme';
 
 interface Node extends d3.SimulationNodeDatum {
   id: number;
   state: DiseaseState;
+  radius: number;
 }
 
 interface Link extends d3.SimulationLinkDatum<Node> {
   source: Node | string | number;
   target: Node | string | number;
+  value: number;
 }
 
 const ForceGraph: React.FC<{ animate?: boolean }> = ({ animate = true }) => {
@@ -21,7 +24,7 @@ const ForceGraph: React.FC<{ animate?: boolean }> = ({ animate = true }) => {
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const theme = useTheme();
   
-  // Update dimensions when the container size changes
+  // Update dimensions when container size changes
   useEffect(() => {
     const updateDimensions = () => {
       if (containerRef.current) {
@@ -38,7 +41,7 @@ const ForceGraph: React.FC<{ animate?: boolean }> = ({ animate = true }) => {
     };
   }, []);
   
-  // Create and update the force directed graph
+  // Create and update force directed graph
   useEffect(() => {
     if (!svgRef.current || dimensions.width === 0 || dimensions.height === 0 || agents.length === 0) return;
     
@@ -46,51 +49,81 @@ const ForceGraph: React.FC<{ animate?: boolean }> = ({ animate = true }) => {
     d3.select(svgRef.current).selectAll("*").remove();
     
     // Set up the SVG
-    const svg = d3.select(svgRef.current);
+    const svg = d3.select(svgRef.current)
+      .attr("viewBox", [0, 0, dimensions.width, dimensions.height]);
     
     // Create nodes from agents
     const nodes: Node[] = agents.map(agent => ({
       id: agent.id,
       state: agent.state,
+      radius: agent.state === DiseaseState.Infectious ? 8 : 5,
+      x: undefined,
+      y: undefined,
+      vx: undefined,
+      vy: undefined,
+      fx: undefined,
+      fy: undefined,
     }));
     
     // Create links from transmission events
     const links: Link[] = transmissionEvents.map(([source, target]) => ({
       source,
       target,
+      value: 1
     }));
     
     // Set up the simulation
     const simulation = d3.forceSimulation(nodes)
-      .force("link", d3.forceLink(links)
-        .id((d: any) => d.id)
-        .distance(30))
-      .force("charge", d3.forceManyBody().strength(-30))
+      .force("link", d3.forceLink<Node, Link>(links)
+        .id(d => d.id)
+        .distance(30)
+        .strength(0.1))
+      .force("charge", d3.forceManyBody()
+        .strength(-50)
+        .distanceMax(150))
       .force("center", d3.forceCenter(dimensions.width / 2, dimensions.height / 2))
-      .force("collision", d3.forceCollide().radius(8));
+      .force("collision", d3.forceCollide().radius(d => (d as Node).radius + 2))
+      .alphaTarget(0);
+    
+    // Create arrow marker for transmission direction
+    svg.append("defs").selectAll("marker")
+      .data(["transmission"])
+      .enter().append("marker")
+      .attr("id", d => d)
+      .attr("viewBox", "0 -5 10 10")
+      .attr("refX", 15)
+      .attr("refY", 0)
+      .attr("markerWidth", 6)
+      .attr("markerHeight", 6)
+      .attr("orient", "auto")
+      .append("path")
+      .attr("d", "M0,-5L10,0L0,5")
+      .attr("fill", "rgba(255, 255, 255, 0.2)");
     
     // Create a group for links
     const linkGroup = svg.append("g")
-      .attr("class", "links");
+      .attr("class", "links")
+      .attr("stroke", "rgba(255, 255, 255, 0.2)")
+      .attr("stroke-opacity", 0.6);
     
-    // Add links
+    // Add links with arrows
     const link = linkGroup.selectAll("line")
       .data(links)
       .enter()
       .append("line")
-      .attr("stroke", "rgba(255, 255, 255, 0.2)")
-      .attr("stroke-width", 1);
+      .attr("stroke-width", 1)
+      .attr("marker-end", "url(#transmission)");
     
     // Create a group for nodes
     const nodeGroup = svg.append("g")
       .attr("class", "nodes");
     
-    // Add nodes
+    // Add nodes with state-based styling
     const node = nodeGroup.selectAll("circle")
       .data(nodes)
       .enter()
       .append("circle")
-      .attr("r", 5)
+      .attr("r", d => d.radius)
       .attr("fill", (d: Node) => {
         switch (d.state) {
           case DiseaseState.Susceptible: return colors.disease.susceptible;
@@ -118,81 +151,83 @@ const ForceGraph: React.FC<{ animate?: boolean }> = ({ animate = true }) => {
           d.fy = null;
         }));
     
-    // Add hover effects
-    node.on("mouseover", function() {
+    // Add hover effects and tooltips
+    node.on("mouseover", function(event, d) {
       d3.select(this)
         .transition()
         .duration(300)
-        .attr("r", 8)
+        .attr("r", d.radius * 1.5)
         .attr("stroke-width", 2);
-    }).on("mouseout", function() {
+        
+      // Show tooltip
+      const tooltip = svg.append("g")
+        .attr("class", "tooltip")
+        .attr("transform", `translate(${event.x + 10},${event.y - 10})`);
+        
+      tooltip.append("rect")
+        .attr("fill", "rgba(0, 0, 0, 0.8)")
+        .attr("rx", 5)
+        .attr("ry", 5);
+        
+      const text = tooltip.append("text")
+        .attr("fill", "#fff")
+        .attr("dy", "1.2em")
+        .attr("x", 8)
+        .style("font-size", "12px");
+        
+      text.append("tspan")
+        .text(`ID: ${d.id}`);
+        
+      text.append("tspan")
+        .attr("x", 8)
+        .attr("dy", "1.2em")
+        .text(`State: ${d.state}`);
+        
+      const bbox = (tooltip.node() as SVGGElement).getBBox();
+      tooltip.select("rect")
+        .attr("width", bbox.width + 16)
+        .attr("height", bbox.height + 8);
+    })
+    .on("mouseout", function(event, d) {
       d3.select(this)
         .transition()
         .duration(300)
-        .attr("r", 5)
+        .attr("r", d.radius)
         .attr("stroke-width", 1);
+        
+      svg.selectAll(".tooltip").remove();
     });
+    
+    // Add glowing effect for infectious nodes
+    const glowFilter = svg.append("defs")
+      .append("filter")
+      .attr("id", "glow");
+      
+    glowFilter.append("feGaussianBlur")
+      .attr("stdDeviation", "3")
+      .attr("result", "coloredBlur");
+      
+    const feMerge = glowFilter.append("feMerge");
+    feMerge.append("feMergeNode")
+      .attr("in", "coloredBlur");
+    feMerge.append("feMergeNode")
+      .attr("in", "SourceGraphic");
+    
+    // Apply glow to infectious nodes
+    node.filter(d => d.state === DiseaseState.Infectious)
+      .style("filter", "url(#glow)");
     
     // Update positions on each tick
     simulation.on("tick", () => {
       link
-        .attr("x1", (d: any) => d.source.x)
-        .attr("y1", (d: any) => d.source.y)
-        .attr("x2", (d: any) => d.target.x)
-        .attr("y2", (d: any) => d.target.y);
+        .attr("x1", d => (d.source as Node).x!)
+        .attr("y1", d => (d.source as Node).y!)
+        .attr("x2", d => (d.target as Node).x!)
+        .attr("y2", d => (d.target as Node).y!);
         
       node
-        .attr("cx", (d: any) => d.x)
-        .attr("cy", (d: any) => d.y);
-    });
-    
-    // Add a subtle glow effect to infected nodes
-    svg.append("defs").selectAll("radialGradient")
-      .data([DiseaseState.Infectious, DiseaseState.Exposed])
-      .enter()
-      .append("radialGradient")
-      .attr("id", d => `glow-${d}`)
-      .attr("cx", "50%")
-      .attr("cy", "50%")
-      .attr("r", "50%")
-      .attr("fx", "50%")
-      .attr("fy", "50%")
-      .selectAll("stop")
-      .data(d => [
-        { offset: "0%", color: d === DiseaseState.Infectious ? colors.disease.infectious : colors.disease.exposed, opacity: 0.7 },
-        { offset: "100%", color: d === DiseaseState.Infectious ? colors.disease.infectious : colors.disease.exposed, opacity: 0 }
-      ])
-      .enter()
-      .append("stop")
-      .attr("offset", d => d.offset)
-      .attr("stop-color", d => d.color)
-      .attr("stop-opacity", d => d.opacity);
-    
-    // Add glowing circles behind infectious and exposed nodes
-    nodeGroup.selectAll(".glow")
-      .data(nodes.filter(d => d.state === DiseaseState.Infectious || d.state === DiseaseState.Exposed))
-      .enter()
-      .insert("circle", "circle")
-      .attr("class", "glow")
-      .attr("r", 12)
-      .attr("fill", d => `url(#glow-${d.state})`)
-      .attr("cx", (d: any) => d.x)
-      .attr("cy", (d: any) => d.y);
-    
-    simulation.on("tick", () => {
-      link
-        .attr("x1", (d: any) => d.source.x)
-        .attr("y1", (d: any) => d.source.y)
-        .attr("x2", (d: any) => d.target.x)
-        .attr("y2", (d: any) => d.target.y);
-        
-      node
-        .attr("cx", (d: any) => d.x)
-        .attr("cy", (d: any) => d.y);
-      
-      nodeGroup.selectAll(".glow")
-        .attr("cx", (d: any) => d.x)
-        .attr("cy", (d: any) => d.y);
+        .attr("cx", d => d.x!)
+        .attr("cy", d => d.y!);
     });
     
     // Animated growth of the graph

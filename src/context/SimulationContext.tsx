@@ -1,6 +1,6 @@
-import React, { createContext, useState, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-// Define the disease states according to SEIR model
+// Disease states enum
 export enum DiseaseState {
   Susceptible = 'Susceptible',
   Exposed = 'Exposed',
@@ -8,30 +8,27 @@ export enum DiseaseState {
   Recovered = 'Recovered'
 }
 
-// Define the agent type 
+// Agent interface
 export interface Agent {
   id: number;
   state: DiseaseState;
-  timeInState: number;
-  connections: number[];
+  exposureTime?: number;
+  infectionTime?: number;
 }
 
-// Define the simulation parameters
+// Simulation parameters interface
 export interface SimulationParams {
   population: number;
   initialInfected: number;
-  r0: number; // Basic reproduction number
-  incubationPeriod: number; // Days before becoming infectious
-  infectiousPeriod: number; // Days being infectious before recovery
-  recoveryRate: number; // Percentage that recover
-  contactRate: number; // Average contacts per day
-  // Advanced parameters
+  r0: number;
+  incubationPeriod: number;
+  infectiousPeriod: number;
+  recoveryRate: number;
   vaccinationRate?: number;
-  maskUsage?: number;
   socialDistancing?: number;
 }
 
-// Simulation timeseries data
+// Time series data interface
 export interface TimeSeriesData {
   day: number;
   susceptible: number;
@@ -39,308 +36,173 @@ export interface TimeSeriesData {
   infectious: number;
   recovered: number;
   dead: number;
-  cumulative: number;
 }
 
-// Define the context type
+// Context interface
 interface SimulationContextType {
   simulationParams: SimulationParams;
-  timeSeriesData: TimeSeriesData[];
-  agents: Agent[];
-  transmissionEvents: [number, number][]; // [source, target]
   updateParams: (params: Partial<SimulationParams>) => void;
-  runSimulation: () => void;
-  resetSimulation: () => void;
+  agents: Agent[];
+  timeSeriesData: TimeSeriesData[];
+  transmissionEvents: [number, number][];
   currentDay: number;
-  isRunning: boolean;
-  isComplete: boolean;
+  runSimulation: () => void;
 }
 
-// Default parameters for the simulation
+// Default parameters
 const defaultParams: SimulationParams = {
   population: 1000,
   initialInfected: 5,
   r0: 2.5,
   incubationPeriod: 5,
-  infectiousPeriod: 10,
+  infectiousPeriod: 14,
   recoveryRate: 0.97,
-  contactRate: 10,
   vaccinationRate: 0,
-  maskUsage: 0,
   socialDistancing: 0
 };
 
-// Create the context with initial default values
-export const SimulationContext = createContext<SimulationContextType>({
-  simulationParams: defaultParams,
-  timeSeriesData: [],
-  agents: [],
-  transmissionEvents: [],
-  updateParams: () => {},
-  runSimulation: () => {},
-  resetSimulation: () => {},
-  currentDay: 0,
-  isRunning: false,
-  isComplete: false
-});
+// Create context
+const SimulationContext = createContext<SimulationContextType | null>(null);
 
+// Provider component
 export const SimulationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [simulationParams, setSimulationParams] = useState<SimulationParams>(defaultParams);
-  const [timeSeriesData, setTimeSeriesData] = useState<TimeSeriesData[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
+  const [timeSeriesData, setTimeSeriesData] = useState<TimeSeriesData[]>([]);
   const [transmissionEvents, setTransmissionEvents] = useState<[number, number][]>([]);
   const [currentDay, setCurrentDay] = useState(0);
-  const [isRunning, setIsRunning] = useState(false);
-  const [isComplete, setIsComplete] = useState(false);
 
   // Update simulation parameters
   const updateParams = (params: Partial<SimulationParams>) => {
     setSimulationParams(prev => ({ ...prev, ...params }));
   };
 
-  // Reset simulation to initial state
-  const resetSimulation = () => {
-    setTimeSeriesData([]);
-    setAgents([]);
-    setTransmissionEvents([]);
-    setCurrentDay(0);
-    setIsRunning(false);
-    setIsComplete(false);
+  // Initialize agents
+  const initializeAgents = () => {
+    const newAgents: Agent[] = Array(simulationParams.population).fill(null).map((_, i) => ({
+      id: i,
+      state: i < simulationParams.initialInfected ? DiseaseState.Infectious : DiseaseState.Susceptible,
+      infectionTime: i < simulationParams.initialInfected ? 0 : undefined
+    }));
+    setAgents(newAgents);
   };
 
-  // Generate a network of agents - simplified for demonstration
-  const generateAgentNetwork = (params: SimulationParams): Agent[] => {
-    const agents: Agent[] = [];
-    
-    // Create all agents first
-    for (let i = 0; i < params.population; i++) {
-      agents.push({
-        id: i,
-        state: i < params.initialInfected ? DiseaseState.Infectious : DiseaseState.Susceptible,
-        timeInState: 0,
-        connections: []
-      });
-    }
-    
-    // Create connections (simplified network)
-    for (let i = 0; i < params.population; i++) {
-      const numContacts = Math.floor(Math.random() * params.contactRate) + 1;
-      for (let j = 0; j < numContacts; j++) {
-        // Generate a random connection (avoid self-loops)
-        let target;
-        do {
-          target = Math.floor(Math.random() * params.population);
-        } while (target === i || agents[i].connections.includes(target));
-        
-        // Add bidirectional connections
-        agents[i].connections.push(target);
-        agents[target].connections.push(i);
+  // Generate random connections using Barabási-Albert model
+  const generateConnections = () => {
+    const events: [number, number][] = [];
+    const m = 3; // Number of connections for each new node
+    const initialNodes = simulationParams.initialInfected;
+
+    // Create initial complete graph
+    for (let i = 0; i < initialNodes; i++) {
+      for (let j = i + 1; j < initialNodes; j++) {
+        events.push([i, j]);
       }
     }
-    
-    return agents;
+
+    // Add remaining nodes with preferential attachment
+    for (let i = initialNodes; i < simulationParams.population; i++) {
+      const connections = new Set<number>();
+      while (connections.size < m) {
+        const target = Math.floor(Math.random() * i);
+        if (!connections.has(target)) {
+          connections.add(target);
+          events.push([i, target]);
+        }
+      }
+    }
+
+    setTransmissionEvents(events);
   };
 
-  // Run a single step of the simulation
-  const simulateDay = (currentAgents: Agent[], day: number): { 
-    updatedAgents: Agent[], 
-    newTransmissions: [number, number][],
-    daySummary: TimeSeriesData
-  } => {
-    const updatedAgents = [...currentAgents];
-    const newTransmissions: [number, number][] = [];
-    
-    // Count initial state
-    let susceptible = 0;
-    let exposed = 0;
-    let infectious = 0;
-    let recovered = 0;
-    
-    currentAgents.forEach(agent => {
-      switch(agent.state) {
-        case DiseaseState.Susceptible: susceptible++; break;
-        case DiseaseState.Exposed: exposed++; break;
-        case DiseaseState.Infectious: infectious++; break;
-        case DiseaseState.Recovered: recovered++; break;
-      }
-    });
-    
-    // Process each agent
-    for (let i = 0; i < updatedAgents.length; i++) {
-      const agent = updatedAgents[i];
-      
-      // Increment time in current state
-      agent.timeInState++;
-      
-      switch(agent.state) {
-        case DiseaseState.Susceptible:
-          // Check if infected by connections
-          for (const contactId of agent.connections) {
-            const contact = currentAgents[contactId];
-            if (contact.state === DiseaseState.Infectious) {
-              // Probability of infection based on R0 and contact parameters
-              if (Math.random() < simulationParams.r0 / simulationParams.contactRate / simulationParams.infectiousPeriod) {
-                agent.state = DiseaseState.Exposed;
-                agent.timeInState = 0;
-                newTransmissions.push([contactId, i]);
-                break;
-              }
-            }
-          }
-          break;
-          
-        case DiseaseState.Exposed:
-          // Check if incubation period is over
-          if (agent.timeInState >= simulationParams.incubationPeriod) {
-            agent.state = DiseaseState.Infectious;
-            agent.timeInState = 0;
-          }
-          break;
-          
-        case DiseaseState.Infectious:
-          // Check if infectious period is over
-          if (agent.timeInState >= simulationParams.infectiousPeriod) {
-            // Determine if agent recovers or dies
-            if (Math.random() < simulationParams.recoveryRate) {
-              agent.state = DiseaseState.Recovered;
-            } else {
-              // Remove agent from network (simulating death)
-              // For simplicity, we'll just mark them as recovered but could handle differently
-              agent.state = DiseaseState.Recovered;
-              // Remove all connections to this agent
-              agent.connections = [];
-            }
-            agent.timeInState = 0;
-          }
-          break;
-          
-        case DiseaseState.Recovered:
-          // Recovered agents stay recovered (no reinfection in this simple model)
-          break;
-      }
-    }
-    
-    // Recount after updates
-    susceptible = 0;
-    exposed = 0;
-    infectious = 0;
-    recovered = 0;
-    updatedAgents.forEach(agent => {
-      switch(agent.state) {
-        case DiseaseState.Susceptible: susceptible++; break;
-        case DiseaseState.Exposed: exposed++; break;
-        case DiseaseState.Infectious: infectious++; break;
-        case DiseaseState.Recovered: recovered++; break;
-      }
-    });
-    
-    // Calculate dead (simplified)
-    const previousTotal = day > 0 ? timeSeriesData[day-1].cumulative : 0;
-    const currentCumulative = exposed + infectious + recovered;
-    const dead = Math.floor((currentCumulative - previousTotal) * (1 - simulationParams.recoveryRate));
-    
-    const daySummary: TimeSeriesData = {
-      day,
-      susceptible,
-      exposed,
-      infectious,
-      recovered,
-      dead,
-      cumulative: currentCumulative
-    };
-    
-    return { updatedAgents, newTransmissions, daySummary };
-  };
-
-  // Run the full simulation
+  // Run SEIR simulation
   const runSimulation = () => {
-    setIsRunning(true);
-    setIsComplete(false);
-    
-    // Generate initial agent network
-    const initialAgents = generateAgentNetwork(simulationParams);
-    setAgents(initialAgents);
-    
-    // Initial count
-    let susceptible = 0;
-    let exposed = 0;
-    let infectious = 0;
-    let recovered = 0;
-    
-    initialAgents.forEach(agent => {
-      switch(agent.state) {
-        case DiseaseState.Susceptible: susceptible++; break;
-        case DiseaseState.Exposed: exposed++; break;
-        case DiseaseState.Infectious: infectious++; break;
-        case DiseaseState.Recovered: recovered++; break;
-      }
-    });
-    
-    // Set initial day data
-    setTimeSeriesData([{
+    initializeAgents();
+    generateConnections();
+
+    // Initialize time series data
+    const initialData: TimeSeriesData = {
       day: 0,
-      susceptible,
-      exposed,
-      infectious,
-      recovered,
-      dead: 0,
-      cumulative: exposed + infectious + recovered
-    }]);
-    
-    // Start the simulation loop
-    let currentAgents = [...initialAgents];
-    let allTransmissions: [number, number][] = [];
-    let day = 0;
-    
-    // For demo purposes, we'll run a fixed number of days
-    const simulateAsync = () => {
-      const MAX_DAYS = 90; // Run for 90 days max
-      
-      // Simulate the next day
-      const { updatedAgents, newTransmissions, daySummary } = simulateDay(currentAgents, day + 1);
-      currentAgents = updatedAgents;
-      allTransmissions = [...allTransmissions, ...newTransmissions];
-      
-      // Update state
-      setAgents(updatedAgents);
-      setTransmissionEvents(allTransmissions);
-      setTimeSeriesData(prev => [...prev, daySummary]);
-      setCurrentDay(day + 1);
-      
-      day++;
-      
-      // Continue simulation if pandemic still active and we're under max days
-      if (day < MAX_DAYS && daySummary.infectious > 0) {
-        setTimeout(simulateAsync, 200); // Control simulation speed
-      } else {
-        setIsRunning(false);
-        setIsComplete(true);
-      }
+      susceptible: simulationParams.population - simulationParams.initialInfected,
+      exposed: 0,
+      infectious: simulationParams.initialInfected,
+      recovered: 0,
+      dead: 0
     };
-    
-    // Start the simulation loop
-    setTimeout(simulateAsync, 500);
+    setTimeSeriesData([initialData]);
+
+    // Simulate for 100 days
+    const simulationDays = 100;
+    const newTimeSeriesData: TimeSeriesData[] = [initialData];
+    const newAgents = [...agents];
+
+    for (let day = 1; day <= simulationDays; day++) {
+      // Process infections
+      const transmissionProb = simulationParams.r0 / (simulationParams.infectiousPeriod * 10);
+      
+      transmissionEvents.forEach(([source, target]) => {
+        const sourceAgent = newAgents[source];
+        const targetAgent = newAgents[target];
+
+        if (sourceAgent.state === DiseaseState.Infectious && 
+            targetAgent.state === DiseaseState.Susceptible &&
+            Math.random() < transmissionProb * (1 - (simulationParams.socialDistancing || 0))) {
+          targetAgent.state = DiseaseState.Exposed;
+          targetAgent.exposureTime = day;
+        }
+      });
+
+      // Update states
+      newAgents.forEach(agent => {
+        if (agent.state === DiseaseState.Exposed && 
+            day - (agent.exposureTime || 0) >= simulationParams.incubationPeriod) {
+          agent.state = DiseaseState.Infectious;
+          agent.infectionTime = day;
+        }
+        else if (agent.state === DiseaseState.Infectious && 
+                day - (agent.infectionTime || 0) >= simulationParams.infectiousPeriod) {
+          agent.state = Math.random() < simulationParams.recoveryRate ? 
+            DiseaseState.Recovered : DiseaseState.Susceptible;
+        }
+      });
+
+      // Update time series
+      const dayData: TimeSeriesData = {
+        day,
+        susceptible: newAgents.filter(a => a.state === DiseaseState.Susceptible).length,
+        exposed: newAgents.filter(a => a.state === DiseaseState.Exposed).length,
+        infectious: newAgents.filter(a => a.state === DiseaseState.Infectious).length,
+        recovered: newAgents.filter(a => a.state === DiseaseState.Recovered).length,
+        dead: simulationParams.population - newAgents.filter(a => a.state !== DiseaseState.Recovered).length
+      };
+      newTimeSeriesData.push(dayData);
+      setCurrentDay(day);
+    }
+
+    setTimeSeriesData(newTimeSeriesData);
+    setAgents(newAgents);
   };
 
   return (
-    <SimulationContext.Provider
-      value={{
-        simulationParams,
-        timeSeriesData,
-        agents,
-        transmissionEvents,
-        updateParams,
-        runSimulation,
-        resetSimulation,
-        currentDay,
-        isRunning,
-        isComplete
-      }}
-    >
+    <SimulationContext.Provider value={{
+      simulationParams,
+      updateParams,
+      agents,
+      timeSeriesData,
+      transmissionEvents,
+      currentDay,
+      runSimulation
+    }}>
       {children}
     </SimulationContext.Provider>
   );
 };
 
-// Custom hook for easy context usage
-export const useSimulation = () => useContext(SimulationContext);
+// Hook to use simulation context
+export const useSimulation = () => {
+  const context = useContext(SimulationContext);
+  if (!context) {
+    throw new Error('useSimulation must be used within a SimulationProvider');
+  }
+  return context;
+};
