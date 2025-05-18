@@ -136,7 +136,7 @@ const SimulationForm: React.FC<{ onStart: () => void }> = ({ onStart }) => {
               <Slider
                 value={simulationParams.initialInfected}
                 min={1}
-                max={50}
+                max={1000}
                 step={1}
                 onChange={handleSliderChange('initialInfected')}
                 sx={{
@@ -158,7 +158,7 @@ const SimulationForm: React.FC<{ onStart: () => void }> = ({ onStart }) => {
                 type="number"
                 variant="outlined"
                 size="small"
-                inputProps={{ min: 1, max: 50, step: 1 }}
+                inputProps={{ min: 1, max: 1000, step: 1 }}
                 sx={{ width: 150, ml: 2 }}
               />
             </Box>

@@ -1,4 +1,6 @@
-import React from "react"
+"use client"
+
+import type React from "react"
 import { Box, Typography, Container, Grid, Button, Link } from "@mui/material"
 import { motion } from "framer-motion"
 import FrostedCard from "../components/FrostedCard"
@@ -32,11 +34,13 @@ const HomePage: React.FC<HomePageProps> = ({ onStartSimulation, simulationStatus
       <Box
         sx={{
           position: "relative",
-          height: "calc(100vh - 48px)",
+          minHeight: "calc(100vh - 48px)",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           overflow: "hidden",
+          paddingTop: { xs: "60px", md: "0" },
+          paddingBottom: { xs: "60px", md: "0" },
         }}
       >
         <HeroBackground />
@@ -165,7 +169,12 @@ const HomePage: React.FC<HomePageProps> = ({ onStartSimulation, simulationStatus
             </Typography>
 
             <Typography variant="body1" mb={4} color="text.secondary" lineHeight={1.7}>
-              Destreza is a sophisticated disease transmission simulator that combines advanced network modeling with real-time visualization. Using the Barabási-Albert algorithm, it generates realistic social networks that capture the complexity of human interactions, including super-spreader events. The simulation employs a force-directed graph visualization and implements the SEIRD (Susceptible, Exposed, Infectious, Recovered, Deceased) model to accurately simulate disease spread patterns similar to COVID-19, with configurable parameters for different virus variants and intervention strategies.
+              Destreza is a sophisticated disease transmission simulator that combines advanced network modeling with
+              real-time visualization. Using the Barabási-Albert algorithm, it generates realistic social networks that
+              capture the complexity of human interactions, including super-spreader events. The simulation employs a
+              force-directed graph visualization and implements the SEIRD (Susceptible, Exposed, Infectious, Recovered,
+              Deceased) model to accurately simulate disease spread patterns similar to COVID-19, with configurable
+              parameters for different virus variants and intervention strategies.
             </Typography>
 
             <Box>
@@ -231,12 +240,7 @@ const HomePage: React.FC<HomePageProps> = ({ onStartSimulation, simulationStatus
               </Typography>
               <Box component="ul" sx={{ pl: 3 }}>
                 <Box component="li" sx={{ mb: 1 }}>
-                  <Link
-                    href="https://covid19.who.int/"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    color="inherit"
-                  >
+                  <Link href="https://covid19.who.int/" target="_blank" rel="noopener noreferrer" color="inherit">
                     WHO COVID-19 Dashboard
                   </Link>
                 </Box>
