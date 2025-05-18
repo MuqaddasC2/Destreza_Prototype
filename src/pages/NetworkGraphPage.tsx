@@ -137,7 +137,8 @@ const NetworkGraphPage: React.FC<NetworkGraphPageProps> = ({ hasSimulation, onRe
                     { state: 'Susceptible', color: colors.disease.susceptible },
                     { state: 'Exposed', color: colors.disease.exposed },
                     { state: 'Infectious', color: colors.disease.infectious },
-                    { state: 'Recovered', color: colors.disease.recovered }
+                    { state: 'Recovered', color: colors.disease.recovered },
+                    { state: 'Deceased', color: '#808080' }
                   ].map((item) => (
                     <Grid item key={item.state}>
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
