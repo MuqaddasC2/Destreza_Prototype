@@ -25,7 +25,10 @@
     "@tsparticles/engine": "^3.3.0",
     "@tsparticles/react": "^3.0.0",
     "@tsparticles/slim": "^3.3.0",
-    "tsparticles": "^3.3.0"
+    "tsparticles": "^3.3.0",
+    "@tsparticles/interaction-external-attract": "^3.3.0",
+    "@tsparticles/interaction-external-trail": "^3.3.0",
+    "@tsparticles/plugin-emitters": "^3.3.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
