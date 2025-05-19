@@ -22,28 +22,15 @@ const NetworkGraphPage: React.FC<NetworkGraphPageProps> = ({ hasSimulation, onRe
   const [currentStep, setCurrentStep] = useState(0)
   const [isPlaying, setIsPlaying] = useState(false)
   const [speed, setSpeed] = useState(1)
-  const animationRef = useRef<number>()
-  const maxSteps = useRef(0)
+  const animationFrameRef = useRef<number | null>(null)
+  const lastTimeRef = useRef<number>(0)
+  const forceGraphRef = useRef<React.ElementRef<typeof ForceGraph>>(null)
 
-  // Calculate max steps when simulation data changes
-  useEffect(() => {
-    if (timeSeriesData.length > 0) {
-      // Find the step where all nodes are either recovered or dead
-      for (let i = 0; i < timeSeriesData.length; i++) {
-        const data = timeSeriesData[i]
-        if (data.infectious === 0 && data.exposed === 0) {
-          maxSteps.current = i
-          break
-        }
-      }
-      // If we never found a point where all nodes recovered/died, use the last step
-      if (maxSteps.current === 0) {
-        maxSteps.current = timeSeriesData.length - 1
-      }
-    }
-  }, [timeSeriesData])
+  // Calculate max steps based on time series data
+  const maxSteps = timeSeriesData.length > 0 ? timeSeriesData.length - 1 : 0
 
-  const scrollToSimulation = () => {
+  // Scroll to simulation section
+  const scrollToSimulation = useCallback(() => {
     const homeTab = document.querySelector('[aria-label="Home"]') as HTMLElement
     if (homeTab) {
       homeTab.click()
@@ -55,70 +42,126 @@ const NetworkGraphPage: React.FC<NetworkGraphPageProps> = ({ hasSimulation, onRe
         element.scrollIntoView({ behavior: "smooth" })
       }
     }, 100)
-  }
-
-  const handlePlayPause = () => {
-    setIsPlaying((prev) => !prev)
-  }
-
-  const handleReset = () => {
-    setCurrentStep(0)
-    setIsPlaying(false)
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current)
-    }
-  }
-
-  const handleStepForward = useCallback(() => {
-    setCurrentStep((prev) => {
-      const nextStep = prev + 1
-      if (nextStep >= maxSteps.current) {
-        setIsPlaying(false)
-        if (animationRef.current) {
-          cancelAnimationFrame(animationRef.current)
-        }
-        return maxSteps.current
-      }
-      return nextStep
-    })
   }, [])
 
-  const handleStepBack = () => {
+  // Handle play/pause
+  const handlePlayPause = useCallback(() => {
+    setIsPlaying((prev) => !prev)
+  }, [])
+
+  // Handle reset
+  const handleReset = useCallback(() => {
+    setCurrentStep(0)
+    setIsPlaying(false)
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current)
+      animationFrameRef.current = null
+    }
+  }, [])
+
+  // Handle step forward
+  const handleStepForward = useCallback(() => {
+    setCurrentStep((prev) => {
+      const next = Math.min(prev + 1, maxSteps)
+      if (next >= maxSteps) {
+        setIsPlaying(false)
+      }
+      return next
+    })
+  }, [maxSteps])
+
+  // Handle step back
+  const handleStepBack = useCallback(() => {
     setCurrentStep((prev) => Math.max(0, prev - 1))
-  }
+  }, [])
+
+  // Handle speed change
+  const handleSpeedChange = useCallback((newSpeed: number) => {
+    setSpeed(newSpeed)
+  }, [])
 
   // Animation loop using requestAnimationFrame
   useEffect(() => {
-    let lastTime = 0
-    const interval = 1000 / (speed * 2) // Adjusted for smoother animation
+    // Only run animation if playing is true and we have data
+    if (!isPlaying || timeSeriesData.length === 0) {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+        animationFrameRef.current = null
+      }
+      return
+    }
 
+    // Animation function
     const animate = (timestamp: number) => {
-      if (!lastTime) lastTime = timestamp
-      const delta = timestamp - lastTime
-
-      if (delta > interval) {
-        handleStepForward()
-        lastTime = timestamp
+      if (!lastTimeRef.current) {
+        lastTimeRef.current = timestamp
       }
 
-      if (isPlaying && currentStep < maxSteps.current) {
-        animationRef.current = requestAnimationFrame(animate)
-      } else if (currentStep >= maxSteps.current) {
-        setIsPlaying(false)
+      const deltaTime = timestamp - lastTimeRef.current
+      const interval = 1000 / (speed * 2) // Adjust interval based on speed
+
+      // Only update if enough time has passed
+      if (deltaTime > interval) {
+        // Step forward
+        setCurrentStep((prev) => {
+          const next = prev + 1
+          // Stop animation if we reach the end
+          if (next >= maxSteps) {
+            setIsPlaying(false)
+            return maxSteps
+          }
+          return next
+        })
+
+        // Update last time
+        lastTimeRef.current = timestamp
+      }
+
+      // Continue animation if still playing
+      if (isPlaying) {
+        animationFrameRef.current = requestAnimationFrame(animate)
       }
     }
 
-    if (isPlaying) {
-      animationRef.current = requestAnimationFrame(animate)
-    }
+    // Start animation
+    animationFrameRef.current = requestAnimationFrame(animate)
 
+    // Cleanup on unmount or when dependencies change
     return () => {
-      if (animationRef.current) {
-        cancelAnimationFrame(animationRef.current)
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current)
+        animationFrameRef.current = null
       }
     }
-  }, [isPlaying, speed, handleStepForward, currentStep])
+  }, [isPlaying, speed, timeSeriesData.length, maxSteps])
 
+  // Stop animation when reaching the end
+  useEffect(() => {
+    if (currentStep >= maxSteps && isPlaying) {
+      setIsPlaying(false)
+    }
+  }, [currentStep, maxSteps, isPlaying])
+
+  // Zoom control handlers
+  const handleZoomIn = useCallback(() => {
+    if (forceGraphRef.current) {
+      forceGraphRef.current.handleZoomIn?.()
+    }
+  }, [])
+
+  const handleZoomOut = useCallback(() => {
+    if (forceGraphRef.current) {
+      forceGraphRef.current.handleZoomOut?.()
+    }
+  }, [])
+
+  const handleZoomReset = useCallback(() => {
+    if (forceGraphRef.current) {
+      forceGraphRef.current.handleZoomReset?.()
+    }
+  }, [])
+
+  // Show placeholder when no simulation data is available
   if (!hasSimulation) {
     return (
       <Container maxWidth="lg" sx={{ py: 12, mt: "48px" }}>
@@ -235,7 +278,14 @@ const NetworkGraphPage: React.FC<NetworkGraphPageProps> = ({ hasSimulation, onRe
               </Box>
 
               <Box sx={{ height: { xs: "400px", md: "600px" }, width: "100%" }}>
-                <ForceGraph currentStep={currentStep} isPlaying={isPlaying} />
+                <ForceGraph
+                  ref={forceGraphRef}
+                  currentStep={currentStep}
+                  isPlaying={isPlaying}
+                  onZoomIn={handleZoomIn}
+                  onZoomOut={handleZoomOut}
+                  onZoomReset={handleZoomReset}
+                />
               </Box>
             </FrostedCard>
           </Grid>
@@ -244,13 +294,13 @@ const NetworkGraphPage: React.FC<NetworkGraphPageProps> = ({ hasSimulation, onRe
             <SimulationControls
               isPlaying={isPlaying}
               speed={speed}
+              currentStep={currentStep}
+              maxSteps={maxSteps}
               onPlayPause={handlePlayPause}
               onReset={handleReset}
               onStepForward={handleStepForward}
               onStepBack={handleStepBack}
-              onSpeedChange={setSpeed}
-              currentStep={currentStep}
-              maxSteps={maxSteps.current}
+              onSpeedChange={handleSpeedChange}
             />
           </Grid>
 
@@ -304,8 +354,8 @@ const NetworkGraphPage: React.FC<NetworkGraphPageProps> = ({ hasSimulation, onRe
                 </Typography>
                 <Typography variant="body2" color="text.secondary">
                   • Click and drag nodes to explore connections • Hover over nodes to see detailed information • Use
-                  mouse wheel or buttons to zoom in/out • Click and drag the background to pan • Use controls below to
-                  animate the disease spread
+                  zoom controls to zoom in/out • Click and drag the background to pan • Use controls below to animate
+                  the disease spread
                 </Typography>
               </Box>
             </FrostedCard>
